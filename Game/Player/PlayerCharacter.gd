@@ -13,6 +13,9 @@ var _velocity:Vector2 = Vector2()
 onready var _spr: Sprite = $Sprite as Sprite
 var state_machine: AnimationNodeStateMachinePlayback
 
+#var _crouching:bool = false
+var grounded:bool
+
 func _ready():
 	set_physics_process(true)
 	set_process(true)
@@ -25,13 +28,22 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	move(delta)
 	
+	
 func move(delta: float) -> void:
 # warning-ignore:unused_variable
-	#var current = state_machine.get_current_node()
+	var current = state_machine.get_current_node()
 	
 	_direction.x = int(Input.is_action_pressed("ui_right")) - int(Input.is_action_pressed("ui_left"))
 	
-	if _direction.y != 0:
+	if Input.is_action_pressed("ui_down") and grounded and _direction.x == 0:
+		if current != "Crouch":
+			state_machine.travel("Crouch")
+			return
+		
+		
+	if Input.is_action_pressed("ui_down"):
+		state_machine.travel("Crouch")
+	if _direction.y > 0:
 		state_machine.travel("Jump")
 	if _direction.x != 0 and _direction.y == 0:
 		state_machine.travel("Run")
@@ -53,9 +65,12 @@ func move(delta: float) -> void:
 	var _get_collision = get_slide_collision(get_slide_count() -1)
 	
 	if is_on_floor():
+		grounded = true
 		_velocity.y = 0
 		_direction.y = 0
-		
+
 		if Input.is_action_just_pressed("ui_up"):
 			_velocity.y = -_jump_speed
 			_direction.y = 1
+	elif !is_on_floor():
+		grounded = false
